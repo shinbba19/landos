@@ -11,8 +11,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <div className="no-print"><Navbar /></div>
-        <main className="pt-16 min-h-screen">
+        <Navbar />
+        <main className="pt-16 print:pt-0 min-h-screen">
           {children}
         </main>
       </body>

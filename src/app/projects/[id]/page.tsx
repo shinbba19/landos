@@ -46,7 +46,7 @@ export default function ProjectPage() {
   return (
     <div className="min-h-screen">
       {/* Project Header */}
-      <div className="no-print border-b border-brand-gold/20 bg-brand-navy-light">
+      <div className="print:hidden border-b border-brand-gold/20 bg-brand-navy-light">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <Link
             href="/"

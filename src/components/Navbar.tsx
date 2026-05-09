@@ -7,7 +7,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-brand-gold/20 bg-brand-navy/95 backdrop-blur-sm">
+    <header className="print:hidden fixed top-0 left-0 right-0 z-50 h-16 border-b border-brand-gold/20 bg-brand-navy/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-gold to-brand-gold-dark flex items-center justify-center">
