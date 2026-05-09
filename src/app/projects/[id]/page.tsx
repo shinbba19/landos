@@ -42,10 +42,8 @@ export default function ProjectPage() {
     if (!reportRef.current) return;
     setPdfLoading(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
       const canvas = await html2canvas(reportRef.current, {
         backgroundColor: "#0D1B2A",
         scale: 2,
