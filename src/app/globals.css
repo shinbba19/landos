@@ -40,6 +40,8 @@
     color: #F5F0E8 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   * {
@@ -47,8 +49,18 @@
     print-color-adjust: exact !important;
   }
 
+  #report-content {
+    zoom: 0.58;
+    transform-origin: top left;
+    width: 172%;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden;
+  }
+
   @page {
-    margin: 8mm;
+    margin: 6mm;
     size: A4 portrait;
   }
 }

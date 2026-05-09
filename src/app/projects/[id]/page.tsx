@@ -101,7 +101,7 @@ export default function ProjectPage() {
       </div>
 
       {/* Tab Content */}
-      <div ref={reportRef} className="max-w-7xl mx-auto px-6 py-8">
+      <div ref={reportRef} className="max-w-7xl mx-auto px-6 py-8 print:px-0 print:py-0" id="report-content">
         {activeTab === "quick-check"      && <QuickCheckResult project={project} />}
         {activeTab === "investor-summary" && <InvestorSummary project={project} />}
         {activeTab === "feasibility"      && <ExecutiveFeasibility project={project} />}
