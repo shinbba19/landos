@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, ImageIcon } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProject } from "@/lib/store";
 import type { Project } from "@/lib/types";
@@ -27,7 +27,6 @@ export default function ProjectPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState("quick-check");
   const reportRef = useRef<HTMLDivElement>(null);
-  const [jpgLoading, setJpgLoading] = useState(false);
 
   useEffect(() => {
     const p = getProject(id);
@@ -42,73 +41,6 @@ export default function ProjectPage() {
     window.print();
   }
 
-  async function handleExportJPG() {
-    if (!reportRef.current) return;
-    setJpgLoading(true);
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-
-      // 1×1 canvas trick: browser resolves modern CSS colors (oklab, color-mix) → rgba
-      const tmpCanvas = document.createElement("canvas");
-      tmpCanvas.width = tmpCanvas.height = 1;
-      const tmpCtx = tmpCanvas.getContext("2d")!;
-
-      function resolveColor(value: string): string {
-        if (!value.includes("oklab") && !value.includes("oklch") && !value.includes("color-mix")) {
-          return value;
-        }
-        try {
-          tmpCtx.clearRect(0, 0, 1, 1);
-          tmpCtx.fillStyle = value;
-          tmpCtx.fillRect(0, 0, 1, 1);
-          const [r, g, b, a] = tmpCtx.getImageData(0, 0, 1, 1).data;
-          return a === 0 ? "transparent" : `rgba(${r},${g},${b},${(a / 255).toFixed(3)})`;
-        } catch {
-          return value;
-        }
-      }
-
-      const canvas = await html2canvas(reportRef.current, {
-        backgroundColor: "#0D1B2A",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        onclone: (clonedDoc) => {
-          const win = clonedDoc.defaultView;
-          if (!win) return;
-          const props = [
-            "color", "background-color",
-            "border-top-color", "border-right-color",
-            "border-bottom-color", "border-left-color",
-            "outline-color",
-          ];
-          clonedDoc.querySelectorAll("*").forEach(el => {
-            try {
-              const computed = win.getComputedStyle(el as HTMLElement);
-              props.forEach(prop => {
-                const val = computed.getPropertyValue(prop);
-                if (val && (val.includes("oklab") || val.includes("oklch") || val.includes("color-mix"))) {
-                  (el as HTMLElement).style.setProperty(prop, resolveColor(val), "important");
-                }
-              });
-            } catch { /* skip */ }
-          });
-        },
-      });
-
-      const link = document.createElement("a");
-      const tabLabel = TABS.find(t => t.id === activeTab)?.label ?? activeTab;
-      const safeName = project!.input.projectName.replace(/[^a-z0-9\-_]/gi, "-");
-      link.download = `${safeName}-${tabLabel}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.92);
-      link.click();
-    } catch (err) {
-      console.error("JPG export error:", err);
-      alert("Export failed: " + String(err));
-    } finally {
-      setJpgLoading(false);
-    }
-  }
 
   if (!project) return null;
 
@@ -137,15 +69,6 @@ export default function ProjectPage() {
                 className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
               >
                 <Download size={14} className="mr-1.5" />Export PDF
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportJPG}
-                disabled={jpgLoading}
-                className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
-              >
-                <ImageIcon size={14} className="mr-1.5" />{jpgLoading ? "Exporting…" : "Export JPG"}
               </Button>
               <div className="text-right text-xs text-brand-cream/30">
                 <p>Analysis Date</p>
