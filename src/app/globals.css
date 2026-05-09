@@ -35,13 +35,22 @@
 }
 
 @media print {
+  /* Flip to light theme — professional investment memo style */
+  :root {
+    --color-brand-navy: #ffffff;
+    --color-brand-navy-light: #f4f4f6;
+    --color-brand-navy-mid: #e8e8ec;
+    --color-brand-slate: #d0d4dc;
+    --color-brand-cream: #0D1B2A;
+    --color-brand-cream-dark: #1A2F45;
+  }
+
   html, body {
-    background-color: #0D1B2A !important;
-    color: #F5F0E8 !important;
+    background-color: #ffffff !important;
+    color: #0D1B2A !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    font-size: 11px;
   }
 
   * {
@@ -50,17 +59,16 @@
   }
 
   #report-content {
-    zoom: 0.58;
-    transform-origin: top left;
-    width: 172%;
-    max-width: none !important;
+    max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
-    overflow: hidden;
   }
 
+  /* Keep gold accent color */
+  .shadow-2xl, .shadow-lg { box-shadow: none !important; }
+
   @page {
-    margin: 6mm;
+    margin: 12mm;
     size: A4 portrait;
   }
 }
