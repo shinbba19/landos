@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProject } from "@/lib/store";
 import type { Project } from "@/lib/types";
@@ -26,7 +26,6 @@ export default function ProjectPage() {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState("quick-check");
-  const [pdfLoading, setPdfLoading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,40 +37,8 @@ export default function ProjectPage() {
     setProject(p);
   }, [id, router]);
 
-  async function handleExportPDF() {
-    if (!reportRef.current) return;
-    setPdfLoading(true);
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(reportRef.current, {
-        backgroundColor: "#0D1B2A",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pw = pdf.internal.pageSize.getWidth();
-      const ph = pdf.internal.pageSize.getHeight();
-      const imgH = (canvas.height * pw) / canvas.width;
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, pw, imgH);
-      heightLeft -= ph;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pw, imgH);
-        heightLeft -= ph;
-      }
-      const tabLabel = TABS.find(t => t.id === activeTab)?.label ?? activeTab;
-      const safeName = project!.input.projectName.replace(/[^a-z0-9\-_]/gi, "-");
-      const safeTab  = tabLabel.replace(/[^a-z0-9\-_]/gi, "-");
-      pdf.save(`${safeName}-${safeTab}.pdf`);
-    } finally {
-      setPdfLoading(false);
-    }
+  function handleExportPDF() {
+    window.print();
   }
 
   if (!project) return null;
@@ -79,7 +46,7 @@ export default function ProjectPage() {
   return (
     <div className="min-h-screen">
       {/* Project Header */}
-      <div className="border-b border-brand-gold/20 bg-brand-navy-light">
+      <div className="no-print border-b border-brand-gold/20 bg-brand-navy-light">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <Link
             href="/"
@@ -98,14 +65,9 @@ export default function ProjectPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleExportPDF}
-                disabled={pdfLoading}
                 className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
               >
-                {pdfLoading ? (
-                  <><Loader2 size={14} className="animate-spin mr-1.5" />Generating...</>
-                ) : (
-                  <><Download size={14} className="mr-1.5" />Export PDF</>
-                )}
+                <Download size={14} className="mr-1.5" />Export PDF
               </Button>
               <div className="text-right text-xs text-brand-cream/30">
                 <p>Analysis Date</p>
