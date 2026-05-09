@@ -52,9 +52,8 @@ export default function ProjectPage() {
         scale: 2,
         useCORS: true,
         logging: false,
-        onclone: (doc) => {
-          // Replace Tailwind oklch CSS variables with hex so html2canvas can parse them
-          const style = doc.createElement("style");
+        onclone: (_clonedDoc, element) => {
+          const style = element.ownerDocument.createElement("style");
           style.textContent = `
             :root {
               --color-emerald-200: #a7f3d0;
@@ -76,7 +75,7 @@ export default function ProjectPage() {
               --color-blue-500:   #3b82f6;
             }
           `;
-          doc.head.appendChild(style);
+          element.ownerDocument.head.appendChild(style);
         },
       });
       const link = document.createElement("a");
@@ -85,6 +84,9 @@ export default function ProjectPage() {
       link.download = `${safeName}-${tabLabel}.jpg`;
       link.href = canvas.toDataURL("image/jpeg", 0.92);
       link.click();
+    } catch (err) {
+      console.error("JPG export error:", err);
+      alert("Export failed: " + String(err));
     } finally {
       setJpgLoading(false);
     }
