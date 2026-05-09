@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProject } from "@/lib/store";
 import type { Project } from "@/lib/types";
@@ -27,6 +27,7 @@ export default function ProjectPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState("quick-check");
   const reportRef = useRef<HTMLDivElement>(null);
+  const [jpgLoading, setJpgLoading] = useState(false);
 
   useEffect(() => {
     const p = getProject(id);
@@ -39,6 +40,54 @@ export default function ProjectPage() {
 
   function handleExportPDF() {
     window.print();
+  }
+
+  async function handleExportJPG() {
+    if (!reportRef.current) return;
+    setJpgLoading(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(reportRef.current, {
+        backgroundColor: "#0D1B2A",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (doc) => {
+          // Replace Tailwind oklch CSS variables with hex so html2canvas can parse them
+          const style = doc.createElement("style");
+          style.textContent = `
+            :root {
+              --color-emerald-200: #a7f3d0;
+              --color-emerald-300: #6ee7b7;
+              --color-emerald-400: #34d399;
+              --color-emerald-500: #10b981;
+              --color-emerald-600: #059669;
+              --color-emerald-900: #064e3b;
+              --color-yellow-300: #fde047;
+              --color-yellow-400: #facc15;
+              --color-yellow-500: #eab308;
+              --color-yellow-900: #713f12;
+              --color-red-300:    #fca5a5;
+              --color-red-400:    #f87171;
+              --color-red-600:    #dc2626;
+              --color-red-900:    #7f1d1d;
+              --color-orange-500: #f97316;
+              --color-purple-500: #a855f7;
+              --color-blue-500:   #3b82f6;
+            }
+          `;
+          doc.head.appendChild(style);
+        },
+      });
+      const link = document.createElement("a");
+      const tabLabel = TABS.find(t => t.id === activeTab)?.label ?? activeTab;
+      const safeName = project!.input.projectName.replace(/[^a-z0-9\-_]/gi, "-");
+      link.download = `${safeName}-${tabLabel}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.92);
+      link.click();
+    } finally {
+      setJpgLoading(false);
+    }
   }
 
   if (!project) return null;
@@ -68,6 +117,15 @@ export default function ProjectPage() {
                 className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
               >
                 <Download size={14} className="mr-1.5" />Export PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportJPG}
+                disabled={jpgLoading}
+                className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
+              >
+                <Image size={14} className="mr-1.5" />{jpgLoading ? "Exporting…" : "Export JPG"}
               </Button>
               <div className="text-right text-xs text-brand-cream/30">
                 <p>Analysis Date</p>
