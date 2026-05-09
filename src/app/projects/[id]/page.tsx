@@ -47,37 +47,55 @@ export default function ProjectPage() {
     setJpgLoading(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
+
+      // 1×1 canvas trick: browser resolves modern CSS colors (oklab, color-mix) → rgba
+      const tmpCanvas = document.createElement("canvas");
+      tmpCanvas.width = tmpCanvas.height = 1;
+      const tmpCtx = tmpCanvas.getContext("2d")!;
+
+      function resolveColor(value: string): string {
+        if (!value.includes("oklab") && !value.includes("oklch") && !value.includes("color-mix")) {
+          return value;
+        }
+        try {
+          tmpCtx.clearRect(0, 0, 1, 1);
+          tmpCtx.fillStyle = value;
+          tmpCtx.fillRect(0, 0, 1, 1);
+          const [r, g, b, a] = tmpCtx.getImageData(0, 0, 1, 1).data;
+          return a === 0 ? "transparent" : `rgba(${r},${g},${b},${(a / 255).toFixed(3)})`;
+        } catch {
+          return value;
+        }
+      }
+
       const canvas = await html2canvas(reportRef.current, {
         backgroundColor: "#0D1B2A",
         scale: 2,
         useCORS: true,
         logging: false,
-        onclone: (_clonedDoc, element) => {
-          const style = element.ownerDocument.createElement("style");
-          style.textContent = `
-            :root {
-              --color-emerald-200: #a7f3d0;
-              --color-emerald-300: #6ee7b7;
-              --color-emerald-400: #34d399;
-              --color-emerald-500: #10b981;
-              --color-emerald-600: #059669;
-              --color-emerald-900: #064e3b;
-              --color-yellow-300: #fde047;
-              --color-yellow-400: #facc15;
-              --color-yellow-500: #eab308;
-              --color-yellow-900: #713f12;
-              --color-red-300:    #fca5a5;
-              --color-red-400:    #f87171;
-              --color-red-600:    #dc2626;
-              --color-red-900:    #7f1d1d;
-              --color-orange-500: #f97316;
-              --color-purple-500: #a855f7;
-              --color-blue-500:   #3b82f6;
-            }
-          `;
-          element.ownerDocument.head.appendChild(style);
+        onclone: (clonedDoc) => {
+          const win = clonedDoc.defaultView;
+          if (!win) return;
+          const props = [
+            "color", "background-color",
+            "border-top-color", "border-right-color",
+            "border-bottom-color", "border-left-color",
+            "outline-color",
+          ];
+          clonedDoc.querySelectorAll("*").forEach(el => {
+            try {
+              const computed = win.getComputedStyle(el as HTMLElement);
+              props.forEach(prop => {
+                const val = computed.getPropertyValue(prop);
+                if (val && (val.includes("oklab") || val.includes("oklch") || val.includes("color-mix"))) {
+                  (el as HTMLElement).style.setProperty(prop, resolveColor(val), "important");
+                }
+              });
+            } catch { /* skip */ }
+          });
         },
       });
+
       const link = document.createElement("a");
       const tabLabel = TABS.find(t => t.id === activeTab)?.label ?? activeTab;
       const safeName = project!.input.projectName.replace(/[^a-z0-9\-_]/gi, "-");
