@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Image } from "lucide-react";
+import { ArrowLeft, Download, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProject } from "@/lib/store";
 import type { Project } from "@/lib/types";
@@ -125,7 +125,7 @@ export default function ProjectPage() {
                 disabled={jpgLoading}
                 className="text-brand-cream/60 border-brand-gold/30 hover:border-brand-gold hover:text-brand-cream"
               >
-                <Image size={14} className="mr-1.5" />{jpgLoading ? "Exporting…" : "Export JPG"}
+                <ImageIcon size={14} className="mr-1.5" />{jpgLoading ? "Exporting…" : "Export JPG"}
               </Button>
               <div className="text-right text-xs text-brand-cream/30">
                 <p>Analysis Date</p>
