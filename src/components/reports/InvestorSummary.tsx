@@ -9,6 +9,9 @@ interface Props { project: Project }
 export function InvestorSummary({ project }: Props) {
   const { input, result } = project;
   const acqPriceRatio = (input.estimatedSellingPricePerWah / input.acquisitionPricePerWah).toFixed(1);
+  const infraCostPerWah = result.totalLandSizeWah > 0
+    ? Math.round(result.infrastructureCostTotal / result.totalLandSizeWah)
+    : 0;
 
   return (
     <div className="space-y-0 max-w-4xl mx-auto">
@@ -48,21 +51,6 @@ export function InvestorSummary({ project }: Props) {
             <Badge variant="gray">{input.roadAccess}</Badge>
           </div>
         </div>
-
-        {/* Hero Image */}
-        {project.heroImageBase64 && (
-          <div className="relative h-56 overflow-hidden border-b border-brand-gold/20">
-            <img
-              src={project.heroImageBase64}
-              alt={`${input.projectName} — Property Photo`}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/60 to-transparent" />
-            <div className="absolute bottom-3 left-8">
-              <span className="text-brand-cream/50 text-xs uppercase tracking-widest">Property Photo</span>
-            </div>
-          </div>
-        )}
 
         {/* Hero stats bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 border-b border-brand-gold/20">
@@ -109,7 +97,7 @@ export function InvestorSummary({ project }: Props) {
               <div className="mt-3 space-y-2 rounded-lg border border-brand-gold/20 bg-brand-navy p-4">
                 <InfoRow label="Acquisition Cost" value={formatCurrency(result.acquisitionCostTotal)} />
                 <InfoRow label="Infrastructure Cost" value={formatCurrency(result.infrastructureCostTotal)} />
-                <InfoRow label="Cost per Wah²" value={formatCurrency(input.acquisitionPricePerWah + input.infrastructureCostPerWah)} />
+                <InfoRow label="Infra Cost / Wah²" value={`${infraCostPerWah.toLocaleString()} THB/wah²`} />
                 <div className="border-t border-brand-gold/10 pt-2 mt-2">
                   <InfoRow label="Total Project Cost" value={formatCurrency(result.totalProjectCost)} bold />
                 </div>
@@ -179,7 +167,9 @@ export function InvestorSummary({ project }: Props) {
               <div>
                 <p className="text-brand-gold text-xs uppercase tracking-widest mb-1">Revenue Estimate</p>
                 <p className="text-3xl font-serif text-brand-cream">{formatCurrency(result.estimatedRevenue)}</p>
-                <p className="text-brand-cream/40 text-xs mt-1">Based on {result.sellableAreaWah.toFixed(0)} wah² sellable @ {formatCurrency(input.estimatedSellingPricePerWah)}/wah²</p>
+                <p className="text-brand-cream/40 text-xs mt-1">
+                  Based on {result.sellableAreaWah.toFixed(0)} wah² sellable @ {formatCurrency(input.estimatedSellingPricePerWah)}/wah²
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-brand-gold text-xs uppercase tracking-widest mb-1">Gross Profit</p>

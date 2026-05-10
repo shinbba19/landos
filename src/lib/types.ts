@@ -1,4 +1,4 @@
-export type DevelopmentStandard = "Basic" | "Standard" | "Premium";
+export type DevelopmentType = "Land Subdivision" | "Standard Housing" | "Premium Project";
 
 export interface QuickCheckInput {
   projectName: string;
@@ -8,36 +8,19 @@ export interface QuickCheckInput {
   acquisitionPricePerWah: number;
   estimatedSellingPricePerWah: number;
   plotCount: number;
-  developmentStandard: DevelopmentStandard;
-  // Optional context
+  developmentType: DevelopmentType;
   zoning: string;
   roadAccess: string;
   // Resolved values — auto-estimated unless overridden in Advanced mode
-  infrastructureCostPerWah: number;
+  developmentCostRatio: number;   // fraction of land cost, e.g. 0.10 / 0.25 / 0.35
   roadDeductionPercent: number;
-  // Track whether advanced overrides were applied
   advancedOverride: boolean;
-}
-
-export interface InfraLineItem {
-  labelTh: string;
-  label: string;
-  percent: number;
-  costPerWah: number;
-  totalCost: number;
-}
-
-export interface InfraBreakdown {
-  items: InfraLineItem[];
-  totalPerWah: number;
-  totalProject: number;
 }
 
 export interface AutoEstimation {
   roadDeductionPercent: number;
-  infrastructureCostPerWah: number;
+  developmentCostRatio: number;
   rationale: string;
-  infraBreakdown: InfraBreakdown;
 }
 
 export interface QuickCheckResult {
@@ -46,7 +29,7 @@ export interface QuickCheckResult {
   acquisitionTransferFee: number;
   infrastructureCostTotal: number;
   operatingCost: number;
-  totalProjectCost: number;         // land + transfer fee + infra + operating
+  totalProjectCost: number;
   sellableAreaWah: number;
   estimatedRevenue: number;
   grossProfit: number;
@@ -57,6 +40,7 @@ export interface QuickCheckResult {
   recommendation: "STRONG BUY" | "BUY" | "HOLD" | "PASS";
   aiExecutiveSummary: string;
   aiRiskNote: string;
+  validationWarnings: string[];
 }
 
 export interface SubdivisionScenario {

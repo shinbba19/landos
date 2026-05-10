@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { Project } from "@/lib/types";
-import { Brain, TrendingUp, AlertTriangle, MapPin, Building2 } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, MapPin, Building2, Ruler } from "lucide-react";
 
 interface Props { project: Project }
 
@@ -12,61 +12,55 @@ export function QuickCheckResult({ project }: Props) {
 
   return (
     <div className="space-y-6">
+
+      {/* Hero image */}
+      {project.heroImageBase64 && (
+        <div className="relative h-56 rounded-xl overflow-hidden border border-brand-gold/20">
+          <img src={project.heroImageBase64} alt="Property" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/70 to-transparent" />
+          <div className="absolute bottom-3 left-5">
+            <span className="text-brand-cream/50 text-xs uppercase tracking-widest">Property Photo</span>
+          </div>
+        </div>
+      )}
+
       {/* Score banner */}
       <div className="rounded-lg border border-brand-gold/30 bg-gradient-to-r from-brand-navy-light to-brand-navy-mid p-6">
         <div className="flex items-start justify-between flex-wrap gap-6">
           <div className="flex-1 min-w-48">
-            <p className="text-brand-gold text-xs uppercase tracking-widest mb-1">Quick Check Result</p>
+            <p className="text-brand-gold text-xs uppercase tracking-widest mb-1">Executive Overview</p>
             <h2 className="text-2xl font-serif text-brand-cream mb-1">{input.projectName}</h2>
-            <div className="flex items-center gap-1.5 text-brand-cream/50 text-sm">
+            <div className="flex items-center gap-1.5 text-brand-cream/50 text-sm mb-2">
               <MapPin size={13} />
               <span>{input.location}</span>
             </div>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="gray"><Building2 size={10} className="mr-1" />{input.zoning}</Badge>
               <Badge variant="gray">{input.roadAccess}</Badge>
+              <Badge variant="gray">{input.developmentType}</Badge>
             </div>
           </div>
           <LandosScore score={result.landosScore} recommendation={result.recommendation} size="lg" />
         </div>
       </div>
 
-      {/* Key Metrics Grid */}
+      {/* Land Information strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <LandCell label="Land Size" value={`${result.totalLandSizeWah} wah²`} icon={<Ruler size={13} />} />
+        <LandCell label="Zoning" value={input.zoning || "—"} icon={<Building2 size={13} />} />
+        <LandCell label="Road Access" value={input.roadAccess || "—"} />
+        <LandCell label="Sellable Area" value={`${result.sellableAreaWah.toFixed(0)} wah²`} icon={<TrendingUp size={13} />} />
+      </div>
+
+      {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard label="Total ROI" value={formatPercent(result.roi)} color="gold" icon={<TrendingUp size={16} />} />
-        <MetricCard label="Gross Margin" value={formatPercent(result.grossProfitMargin)} />
         <MetricCard label="Gross Profit" value={formatCurrency(result.grossProfit)} color="green" />
-        <MetricCard label="Total Revenue" value={formatCurrency(result.estimatedRevenue)} />
+        <MetricCard label="Gross Margin" value={formatPercent(result.grossProfitMargin)} />
+        <MetricCard label="LANDOS Score" value={`${result.landosScore.toFixed(1)} / 10`} color="gold" />
       </div>
 
-      {/* Cost Breakdown + Land Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Cost Breakdown</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <LineItem label="Land Size" value={`${result.totalLandSizeWah} Wah²`} />
-            <LineItem label="Acquisition Cost" value={formatCurrency(result.acquisitionCostTotal)} />
-            <LineItem label="Infrastructure Cost" value={formatCurrency(result.infrastructureCostTotal)} />
-            <div className="border-t border-brand-gold/20 pt-3">
-              <LineItem label="Total Project Cost" value={formatCurrency(result.totalProjectCost)} bold />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Revenue & Subdivision</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <LineItem label="Road Deduction" value={`${input.roadDeductionPercent}%`} />
-            <LineItem label="Sellable Area" value={`${result.sellableAreaWah.toFixed(0)} Wah²`} />
-            <LineItem label="Est. Plot Count" value={`${input.plotCount} plots`} />
-            <div className="border-t border-brand-gold/20 pt-3">
-              <LineItem label="Revenue Estimate" value={formatCurrency(result.estimatedRevenue)} bold />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Intelligence */}
+      {/* AI Executive Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
@@ -81,6 +75,7 @@ export function QuickCheckResult({ project }: Props) {
         </CardContent>
       </Card>
 
+      {/* Risk Analysis */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
@@ -95,7 +90,7 @@ export function QuickCheckResult({ project }: Props) {
         </CardContent>
       </Card>
 
-      {/* Score Factors */}
+      {/* Acquisition Score Factors */}
       <Card>
         <CardHeader><CardTitle className="text-sm">Acquisition Score Factors</CardTitle></CardHeader>
         <CardContent>
@@ -109,6 +104,19 @@ export function QuickCheckResult({ project }: Props) {
           </div>
         </CardContent>
       </Card>
+
+    </div>
+  );
+}
+
+function LandCell({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-brand-gold/15 bg-brand-navy-light px-4 py-3">
+      <div className="flex items-center gap-1.5 text-brand-cream/40 mb-1">
+        {icon}
+        <p className="text-xs uppercase tracking-wider">{label}</p>
+      </div>
+      <p className="text-brand-cream text-sm font-medium">{value}</p>
     </div>
   );
 }
@@ -129,15 +137,6 @@ function MetricCard({ label, value, color, icon }: {
           {value}
         </p>
       </div>
-    </div>
-  );
-}
-
-function LineItem({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-brand-cream/50 text-sm">{label}</span>
-      <span className={bold ? "text-brand-cream font-semibold" : "text-brand-cream/80 text-sm"}>{value}</span>
     </div>
   );
 }

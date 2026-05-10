@@ -6,26 +6,30 @@ import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProject } from "@/lib/store";
 import type { Project } from "@/lib/types";
-import { QuickCheckResult } from "@/components/reports/QuickCheckResult";
 import { InvestorSummary } from "@/components/reports/InvestorSummary";
-import { ExecutiveFeasibility } from "@/components/reports/ExecutiveFeasibility";
+import { FeasibilityReport } from "@/components/reports/FeasibilityReport";
 import { SubdivisionAnalysis } from "@/components/reports/SubdivisionAnalysis";
 import { DetailSheet } from "@/components/reports/DetailSheet";
+import { DetailSheet2 } from "@/components/reports/DetailSheet2";
+import { AIChatPanel } from "@/components/AIChatPanel";
+import { SensitivityAnalysis } from "@/components/reports/SensitivityAnalysis";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "quick-check",      label: "Summary" },
-  { id: "investor-summary", label: "Investor Report" },
-  { id: "feasibility",      label: "Costs" },
-  { id: "subdivision",      label: "Subdivision" },
-  { id: "detail-sheet",     label: "Feasibility" },
+  { id: "summary",      label: "Summary" },
+  { id: "feasibility",  label: "Feasibility" },
+  { id: "subdivision",  label: "Subdivision" },
+  { id: "detail-sheet",  label: "Detail Sheet" },
+  { id: "detail-sheet-2", label: "Detail Sheet 2" },
+  { id: "sensitivity",   label: "Sensitivity" },
 ];
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
-  const [activeTab, setActiveTab] = useState("quick-check");
+  const [activeTab, setActiveTab] = useState("summary");
+  const [liveInfraCost, setLiveInfraCost] = useState<number | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,12 +107,15 @@ export default function ProjectPage() {
 
       {/* Tab Content */}
       <div ref={reportRef} className="max-w-7xl mx-auto px-6 py-8 print:px-0 print:py-0" id="report-content">
-        {activeTab === "quick-check"      && <QuickCheckResult project={project} />}
-        {activeTab === "investor-summary" && <InvestorSummary project={project} />}
-        {activeTab === "feasibility"      && <ExecutiveFeasibility project={project} />}
-        {activeTab === "subdivision"      && <SubdivisionAnalysis project={project} />}
-        {activeTab === "detail-sheet"     && <DetailSheet project={project} />}
+        {activeTab === "summary"      && <InvestorSummary project={project} />}
+        {activeTab === "feasibility"  && <FeasibilityReport project={project} onInfraCostChange={setLiveInfraCost} />}
+        {activeTab === "subdivision"  && <SubdivisionAnalysis project={project} />}
+        {activeTab === "detail-sheet" && <DetailSheet project={project} liveInfraCost={liveInfraCost ?? project.result.infrastructureCostTotal} onInfraCostChange={setLiveInfraCost} />}
+        {activeTab === "detail-sheet-2" && <DetailSheet2 project={project} onInfraCostChange={setLiveInfraCost} />}
+        {activeTab === "sensitivity"   && <SensitivityAnalysis project={project} />}
       </div>
+
+      <AIChatPanel project={project} />
     </div>
   );
 }

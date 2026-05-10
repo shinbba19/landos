@@ -1,16 +1,50 @@
-import type { Project } from "./types";
-import { runQuickCheck, generateScenarios } from "./calculations";
+import type { Project, QuickCheckInput, DevelopmentType } from "./types";
+import { runQuickCheck, generateScenarios, DEVELOPMENT_TYPES } from "./calculations";
 
 const KEY = "landos_projects";
 
 function migrateProject(p: Project): Project {
-  // Re-run calculations for projects saved before acquisitionTransferFee/operatingCost were added
-  if (p.result.acquisitionTransferFee == null || p.result.operatingCost == null) {
-    const result = runQuickCheck(p.input);
-    const scenarios = generateScenarios(p.input, result.totalLandSizeWah, p.input.estimatedSellingPricePerWah);
-    return { ...p, result, scenarios };
-  }
-  return p;
+  // Cast to access old fields that may exist on pre-migration localStorage data
+  const input = p.input as QuickCheckInput & {
+    developmentStandard?: string;
+    infrastructureCostPerWah?: number;
+  };
+
+  const needsMigration =
+    p.result.acquisitionTransferFee == null ||
+    p.result.operatingCost == null ||
+    !input.developmentType;
+
+  if (!needsMigration) return p;
+
+  const stdMap: Record<string, DevelopmentType> = {
+    Basic: "Land Subdivision",
+    Standard: "Standard Housing",
+    Premium: "Premium Project",
+  };
+
+  const devType: DevelopmentType =
+    stdMap[input.developmentStandard ?? "Standard"] ?? "Standard Housing";
+
+  const migratedInput: QuickCheckInput = {
+    projectName:              input.projectName,
+    location:                 input.location,
+    landSizeRai:              input.landSizeRai,
+    landSizeWah:              input.landSizeWah,
+    acquisitionPricePerWah:   input.acquisitionPricePerWah,
+    estimatedSellingPricePerWah: input.estimatedSellingPricePerWah,
+    plotCount:                input.plotCount,
+    developmentType:          devType,
+    zoning:                   input.zoning,
+    roadAccess:               input.roadAccess,
+    developmentCostRatio:     DEVELOPMENT_TYPES[devType].ratio,
+    roadDeductionPercent:     input.roadDeductionPercent,
+    advancedOverride:         false,
+  };
+
+  const result = runQuickCheck(migratedInput);
+  const scenarios = generateScenarios(migratedInput, result.totalLandSizeWah, migratedInput.estimatedSellingPricePerWah);
+  return { ...p, input: migratedInput, result, scenarios };
 }
 
 export function getProjects(): Project[] {

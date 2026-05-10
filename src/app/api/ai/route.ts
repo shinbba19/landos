@@ -19,7 +19,7 @@ PROJECT DATA:
 - Acquisition Price: ${input.acquisitionPricePerWah.toLocaleString()} THB/wah²
 - Market Selling Price: ${input.estimatedSellingPricePerWah.toLocaleString()} THB/wah²
 - Price Multiplier: ${(input.estimatedSellingPricePerWah / input.acquisitionPricePerWah).toFixed(1)}×
-- Development Standard: ${input.developmentStandard}
+- Development Type: ${input.developmentType} (${(input.developmentCostRatio * 100).toFixed(0)}% of land cost)
 - Plot Count: ${input.plotCount} plots
 - Zoning: ${input.zoning}
 - Road Access: ${input.roadAccess}
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
           result.grossProfitMargin,
           input.roadDeductionPercent,
           result.roi,
-          input.infrastructureCostPerWah
+          input.developmentCostRatio
         ),
       });
     }

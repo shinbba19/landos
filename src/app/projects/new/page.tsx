@@ -6,35 +6,39 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { autoEstimate, runQuickCheck, generateScenarios, computeInfraBreakdown } from "@/lib/calculations";
+import { autoEstimate, runQuickCheck, generateScenarios, DEVELOPMENT_TYPES } from "@/lib/calculations";
 import { saveProject } from "@/lib/store";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import type { DevelopmentStandard, QuickCheckInput, Project } from "@/lib/types";
+import type { DevelopmentType, QuickCheckInput, Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const DEVELOPMENT_STANDARDS: Array<{
-  value: DevelopmentStandard;
+const DEVELOPMENT_TYPES_UI: Array<{
+  value: DevelopmentType;
   label: string;
+  labelTh: string;
   description: string;
-  detail: string;
+  ratio: string;
 }> = [
   {
-    value: "Basic",
-    label: "Basic",
-    description: "Simple subdivision",
-    detail: "Minimal road & utility infrastructure. Suitable for simple land parcelling or rural plots.",
+    value: "Land Subdivision",
+    label: "Land Subdivision",
+    labelTh: "ที่ดินแบ่งแปลง",
+    description: "Minimal road & utility infrastructure. Suitable for simple land parcelling projects.",
+    ratio: "10% of land cost",
   },
   {
-    value: "Standard",
-    label: "Standard",
-    description: "Normal moo baan",
-    detail: "Standard road width, drainage, and utility connections. Typical residential subdivision project.",
+    value: "Standard Housing",
+    label: "Standard Housing",
+    labelTh: "โครงการหมู่บ้าน",
+    description: "Concrete roads, drainage, utilities, entrance gate, lighting. Typical residential moo baan.",
+    ratio: "25% of land cost",
   },
   {
-    value: "Premium",
-    label: "Premium",
-    description: "Gated / luxury estate",
-    detail: "Wider roads, perimeter fencing, landscaping, guard post. Higher-end residential or luxury estate.",
+    value: "Premium Project",
+    label: "Premium Project",
+    labelTh: "โครงการพรีเมียม",
+    description: "Landscape, premium entrance, clubhouse, high-end infrastructure. Luxury estate.",
+    ratio: "35% of land cost",
   },
 ];
 
@@ -58,14 +62,14 @@ interface SimpleForm {
   acquisitionPricePerWah: number;
   estimatedSellingPricePerWah: number;
   plotCount: number;
-  developmentStandard: DevelopmentStandard;
+  developmentType: DevelopmentType;
   zoning: string;
   roadAccess: string;
 }
 
 interface AdvancedOverrides {
   roadDeductionPercent: number | null;
-  infrastructureCostPerWah: number | null;
+  developmentCostRatioPercent: number | null; // user enters %, stored as whole number e.g. 15
 }
 
 const DEFAULT_FORM: SimpleForm = {
@@ -76,7 +80,7 @@ const DEFAULT_FORM: SimpleForm = {
   acquisitionPricePerWah: 80000,
   estimatedSellingPricePerWah: 250000,
   plotCount: 8,
-  developmentStandard: "Standard",
+  developmentType: "Standard Housing",
   zoning: "",
   roadAccess: "",
 };
@@ -86,7 +90,7 @@ export default function NewProjectPage() {
   const [form, setForm] = useState<SimpleForm>(DEFAULT_FORM);
   const [advanced, setAdvanced] = useState<AdvancedOverrides>({
     roadDeductionPercent: null,
-    infrastructureCostPerWah: null,
+    developmentCostRatioPercent: null,
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -99,25 +103,30 @@ export default function NewProjectPage() {
 
   // Live auto-estimation
   const estimation = useMemo(
-    () => autoEstimate(form.plotCount, form.developmentStandard),
-    [form.plotCount, form.developmentStandard]
+    () => autoEstimate(form.plotCount, form.developmentType),
+    [form.plotCount, form.developmentType]
   );
 
   const resolvedRoadDed = advanced.roadDeductionPercent ?? estimation.roadDeductionPercent;
-  const resolvedInfra = advanced.infrastructureCostPerWah ?? estimation.infrastructureCostPerWah;
+  const resolvedRatio = advanced.developmentCostRatioPercent != null
+    ? advanced.developmentCostRatioPercent / 100
+    : estimation.developmentCostRatio;
+
   const totalWah = form.landSizeRai * 400 + form.landSizeWah;
+  const landCost = totalWah * form.acquisitionPricePerWah;
 
   // Live preview calculation
   const preview = useMemo(() => {
     if (totalWah <= 0 || form.acquisitionPricePerWah <= 0 || form.estimatedSellingPricePerWah <= 0) return null;
     const sellable = totalWah * (1 - resolvedRoadDed / 100);
     const revenue = sellable * form.estimatedSellingPricePerWah;
-    const cost = totalWah * (form.acquisitionPricePerWah + resolvedInfra);
+    const infraCost = landCost * resolvedRatio;
+    const cost = landCost + infraCost;
     const profit = revenue - cost;
-    const roi = (profit / cost) * 100;
-    const margin = (profit / revenue) * 100;
-    return { revenue, cost, profit, roi, margin };
-  }, [totalWah, form.acquisitionPricePerWah, form.estimatedSellingPricePerWah, resolvedRoadDed, resolvedInfra]);
+    const roi = cost > 0 ? (profit / cost) * 100 : 0;
+    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+    return { revenue, infraCost, cost, profit, roi, margin };
+  }, [totalWah, form.acquisitionPricePerWah, form.estimatedSellingPricePerWah, resolvedRoadDed, resolvedRatio, landCost]);
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setImageError(null);
@@ -141,11 +150,11 @@ export default function NewProjectPage() {
     setLoading(true);
     const input: QuickCheckInput = {
       ...form,
-      infrastructureCostPerWah: resolvedInfra,
+      developmentCostRatio: resolvedRatio,
       roadDeductionPercent: resolvedRoadDed,
       zoning: form.zoning || "Residential",
       roadAccess: form.roadAccess || "Public Road",
-      advancedOverride: advanced.roadDeductionPercent !== null || advanced.infrastructureCostPerWah !== null,
+      advancedOverride: advanced.roadDeductionPercent !== null || advanced.developmentCostRatioPercent !== null,
     };
     const result = runQuickCheck(input);
     const scenarios = generateScenarios(input, totalWah, form.estimatedSellingPricePerWah);
@@ -324,37 +333,38 @@ export default function NewProjectPage() {
           </div>
         </FormSection>
 
-        {/* ── Development Standard ── */}
-        <FormSection label="Development Standard">
+        {/* ── Development Type ── */}
+        <FormSection label="Development Type">
           <div className="grid grid-cols-3 gap-3">
-            {DEVELOPMENT_STANDARDS.map(std => (
+            {DEVELOPMENT_TYPES_UI.map(dt => (
               <button
-                key={std.value}
+                key={dt.value}
                 type="button"
-                onClick={() => set("developmentStandard", std.value)}
+                onClick={() => set("developmentType", dt.value)}
                 className={cn(
                   "rounded-lg border p-4 text-left transition-all cursor-pointer",
-                  form.developmentStandard === std.value
+                  form.developmentType === dt.value
                     ? "border-brand-gold bg-brand-gold/10 shadow-lg shadow-brand-gold/10"
                     : "border-brand-gold/20 bg-brand-navy hover:border-brand-gold/40"
                 )}
               >
                 <div className={cn(
                   "w-2 h-2 rounded-full mb-3",
-                  form.developmentStandard === std.value ? "bg-brand-gold" : "bg-brand-navy-mid"
+                  form.developmentType === dt.value ? "bg-brand-gold" : "bg-brand-navy-mid"
                 )} />
                 <p className={cn(
                   "font-semibold text-sm mb-0.5",
-                  form.developmentStandard === std.value ? "text-brand-gold" : "text-brand-cream"
+                  form.developmentType === dt.value ? "text-brand-gold" : "text-brand-cream"
                 )}>
-                  {std.label}
+                  {dt.label}
                 </p>
-                <p className="text-brand-cream/50 text-xs">{std.description}</p>
+                <p className="text-brand-cream/40 text-xs">{dt.labelTh}</p>
+                <p className="text-brand-gold/60 text-xs mt-1.5 font-medium">{dt.ratio}</p>
               </button>
             ))}
           </div>
           <p className="text-brand-cream/35 text-xs mt-3 leading-relaxed">
-            {DEVELOPMENT_STANDARDS.find(s => s.value === form.developmentStandard)?.detail}
+            {DEVELOPMENT_TYPES_UI.find(d => d.value === form.developmentType)?.description}
           </p>
         </FormSection>
 
@@ -365,30 +375,50 @@ export default function NewProjectPage() {
               <Sparkles size={13} className="text-brand-gold" />
               <span className="text-brand-gold text-xs uppercase tracking-widest">LANDOS Auto-Estimation</span>
               <span className="ml-auto text-brand-cream/30 text-xs">
-                {advanced.roadDeductionPercent !== null || advanced.infrastructureCostPerWah !== null
+                {advanced.roadDeductionPercent !== null || advanced.developmentCostRatioPercent !== null
                   ? "Advanced override active"
                   : "Smart defaults applied"}
               </span>
             </div>
 
-            {/* Top KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <EstimateCard label="Road Deduction" value={`${resolvedRoadDed}%`} />
-              <EstimateCard label="Infra Cost / Wah²" value={formatCurrency(resolvedInfra).replace(" THB", "")} unit="THB" />
+              <EstimateCard
+                label="Dev. Cost"
+                value={`${(resolvedRatio * 100).toFixed(0)}% of land`}
+                unit=""
+              />
               {preview && (
                 <>
-                  <EstimateCard label="Est. ROI" value={formatPercent(preview.roi)} color={preview.roi >= 25 ? "green" : preview.roi >= 15 ? "gold" : "red"} />
-                  <EstimateCard label="Gross Margin" value={formatPercent(preview.margin)} color={preview.margin >= 20 ? "green" : "gold"} />
+                  <EstimateCard
+                    label="Est. Dev. Cost"
+                    value={formatCurrency(preview.infraCost)}
+                    color="gold"
+                  />
+                  <EstimateCard
+                    label="Est. ROI"
+                    value={formatPercent(preview.roi)}
+                    color={preview.roi >= 25 ? "green" : preview.roi >= 15 ? "gold" : "red"}
+                  />
                 </>
               )}
             </div>
 
-            {/* Infrastructure Breakdown */}
-            <InfraBreakdownPreview
-              standard={form.developmentStandard}
-              infraCostPerWah={resolvedInfra}
-              totalLandSizeWah={totalWah}
-            />
+            {preview && (
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-brand-gold/10">
+                <div className="flex justify-between text-xs">
+                  <span className="text-brand-cream/35">Land Cost</span>
+                  <span className="text-brand-cream/60">{formatCurrency(landCost)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-brand-cream/35">Gross Margin</span>
+                  <span className={cn(
+                    "font-medium",
+                    preview.margin >= 20 ? "text-emerald-400" : "text-brand-gold"
+                  )}>{formatPercent(preview.margin)}</span>
+                </div>
+              </div>
+            )}
 
             <p className="text-brand-cream/30 text-xs italic">{estimation.rationale}</p>
           </div>
@@ -437,7 +467,7 @@ export default function NewProjectPage() {
           >
             <div className="flex items-center gap-2">
               <span className="text-brand-cream/40 text-sm">Advanced Developer Settings</span>
-              {(advanced.roadDeductionPercent !== null || advanced.infrastructureCostPerWah !== null) && (
+              {(advanced.roadDeductionPercent !== null || advanced.developmentCostRatioPercent !== null) && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
                   Override active
                 </span>
@@ -453,8 +483,8 @@ export default function NewProjectPage() {
               <div className="flex items-start gap-2 p-3 rounded bg-brand-navy-mid">
                 <Info size={13} className="text-brand-gold/60 mt-0.5 shrink-0" />
                 <p className="text-brand-cream/40 text-xs leading-relaxed">
-                  LANDOS has auto-estimated these values from your plot count and development standard.
-                  Only override if you have detailed engineering or site-specific data.
+                  LANDOS has auto-estimated these values from your plot count and development type.
+                  Only override if you have detailed site-specific data.
                 </p>
               </div>
 
@@ -472,25 +502,25 @@ export default function NewProjectPage() {
                     }
                   />
                 </Field>
-                <Field label={`Infra Cost / Wah² (auto: ${estimation.infrastructureCostPerWah.toLocaleString()})`}>
+                <Field label={`Dev. Cost Ratio % (auto: ${(estimation.developmentCostRatio * 100).toFixed(0)}%)`}>
                   <Input
-                    type="number" min={0}
-                    placeholder={String(estimation.infrastructureCostPerWah)}
-                    value={advanced.infrastructureCostPerWah ?? ""}
+                    type="number" min={1} max={60} step={1}
+                    placeholder={String((estimation.developmentCostRatio * 100).toFixed(0))}
+                    value={advanced.developmentCostRatioPercent ?? ""}
                     onChange={e =>
                       setAdvanced(prev => ({
                         ...prev,
-                        infrastructureCostPerWah: e.target.value === "" ? null : Number(e.target.value),
+                        developmentCostRatioPercent: e.target.value === "" ? null : Number(e.target.value),
                       }))
                     }
                   />
                 </Field>
               </div>
 
-              {(advanced.roadDeductionPercent !== null || advanced.infrastructureCostPerWah !== null) && (
+              {(advanced.roadDeductionPercent !== null || advanced.developmentCostRatioPercent !== null) && (
                 <button
                   type="button"
-                  onClick={() => setAdvanced({ roadDeductionPercent: null, infrastructureCostPerWah: null })}
+                  onClick={() => setAdvanced({ roadDeductionPercent: null, developmentCostRatioPercent: null })}
                   className="text-xs text-brand-gold/60 hover:text-brand-gold transition-colors"
                 >
                   ↺ Reset to LANDOS auto-estimate
@@ -513,79 +543,6 @@ export default function NewProjectPage() {
           LANDOS generates investor-ready reports from your inputs. All calculations are deterministic and transparent.
         </p>
       </form>
-    </div>
-  );
-}
-
-// ─── Infrastructure Breakdown Preview ────────────────────────────────────────
-
-function InfraBreakdownPreview({
-  standard, infraCostPerWah, totalLandSizeWah,
-}: {
-  standard: DevelopmentStandard;
-  infraCostPerWah: number;
-  totalLandSizeWah: number;
-}) {
-  const breakdown = computeInfraBreakdown(standard, infraCostPerWah, totalLandSizeWah);
-  const hasTotal = totalLandSizeWah > 0;
-
-  const ICONS: Record<string, string> = {
-    "ถนน": "🛣",
-    "ประปา": "💧",
-    "ไฟฟ้า": "⚡",
-    "ระบบระบายน้ำ": "🌊",
-    "รั้ว / ทางเข้า": "🚪",
-    "รั้ว / ภูมิทัศน์": "🌿",
-    "รั้ว / ภูมิทัศน์ / สระ": "🏊",
-  };
-
-  return (
-    <div>
-      <p className="text-brand-cream/35 text-xs uppercase tracking-widest mb-2">Infrastructure Breakdown</p>
-      <div className="rounded border border-brand-gold/10 bg-brand-navy overflow-hidden">
-        {breakdown.items.map((item, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 px-3 py-2 border-b border-brand-gold/8 last:border-b-0"
-          >
-            <span className="text-base w-5 shrink-0">{ICONS[item.labelTh] ?? "•"}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-brand-cream/80 text-xs font-medium">{item.labelTh}</span>
-                <span className="text-brand-cream/30 text-xs">({item.label})</span>
-              </div>
-              {/* Bar */}
-              <div className="w-full h-1 rounded-full bg-brand-navy-mid mt-1 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-brand-gold/40"
-                  style={{ width: `${item.percent}%` }}
-                />
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-brand-cream/70 text-xs">{item.costPerWah.toLocaleString()} /wah²</p>
-              {hasTotal && (
-                <p className="text-brand-cream/35 text-xs">{formatCurrency(item.totalCost)}</p>
-              )}
-            </div>
-            <span className="text-brand-cream/30 text-xs w-8 text-right shrink-0">{item.percent}%</span>
-          </div>
-        ))}
-        {/* Total row */}
-        <div className="flex items-center justify-between px-3 py-2 bg-brand-navy-mid">
-          <span className="text-brand-cream/50 text-xs uppercase tracking-wider">Total Infrastructure</span>
-          <div className="text-right">
-            <span className="text-brand-cream text-xs font-semibold">
-              {breakdown.totalPerWah.toLocaleString()} THB/wah²
-            </span>
-            {hasTotal && (
-              <span className="text-brand-cream/50 text-xs ml-2">
-                = {formatCurrency(breakdown.totalProject)}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

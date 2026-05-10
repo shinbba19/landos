@@ -3,11 +3,34 @@ import type {
   QuickCheckResult,
   SubdivisionScenario,
   AutoEstimation,
-  InfraBreakdown,
-  DevelopmentStandard,
+  DevelopmentType,
 } from "./types";
 
 const RAI_TO_WAH = 400;
+
+// ─── Development Type Model ───────────────────────────────────────────────────
+
+export const DEVELOPMENT_TYPES: Record<DevelopmentType, {
+  ratio: number;
+  labelTh: string;
+  includes: string;
+}> = {
+  "Land Subdivision": {
+    ratio: 0.10,
+    labelTh: "ที่ดินแบ่งแปลง",
+    includes: "Simple road, electric, minimal infrastructure",
+  },
+  "Standard Housing": {
+    ratio: 0.25,
+    labelTh: "โครงการหมู่บ้าน",
+    includes: "Concrete roads, drainage, utilities, lighting, entrance gate",
+  },
+  "Premium Project": {
+    ratio: 0.35,
+    labelTh: "โครงการพรีเมียม",
+    includes: "Landscape, premium entrance, clubhouse, high-end infrastructure",
+  },
+};
 
 // ─── Auto-Estimation Engine ───────────────────────────────────────────────────
 
@@ -20,71 +43,19 @@ const ROAD_DEDUCTION_BY_PLOTS: Array<{ maxPlots: number; base: number }> = [
   { maxPlots: Infinity, base: 28 },
 ];
 
-const INFRA_COST_BY_STANDARD: Record<DevelopmentStandard, number> = {
-  Basic:    300,
-  Standard: 800,
-  Premium:  1800,
+const ROAD_MULTIPLIER: Record<DevelopmentType, number> = {
+  "Land Subdivision": 0.85,
+  "Standard Housing": 1.00,
+  "Premium Project":  1.20,
 };
-
-const ROAD_MULTIPLIER_BY_STANDARD: Record<DevelopmentStandard, number> = {
-  Basic:    0.85,
-  Standard: 1.00,
-  Premium:  1.20,
-};
-
-const INFRA_COMPONENTS: Record<
-  DevelopmentStandard,
-  Array<{ labelTh: string; label: string; percent: number }>
-> = {
-  Basic: [
-    { labelTh: "ถนน",              label: "Road",                percent: 55 },
-    { labelTh: "ประปา",            label: "Water Supply",        percent: 15 },
-    { labelTh: "ไฟฟ้า",           label: "Electricity",         percent: 15 },
-    { labelTh: "ระบบระบายน้ำ",    label: "Drainage",            percent: 10 },
-    { labelTh: "รั้ว / ทางเข้า", label: "Fence / Entrance",    percent: 5  },
-  ],
-  Standard: [
-    { labelTh: "ถนน",              label: "Road",                percent: 50 },
-    { labelTh: "ประปา",            label: "Water Supply",        percent: 15 },
-    { labelTh: "ไฟฟ้า",           label: "Electricity",         percent: 15 },
-    { labelTh: "ระบบระบายน้ำ",    label: "Drainage",            percent: 12 },
-    { labelTh: "รั้ว / ภูมิทัศน์", label: "Fence / Landscaping", percent: 8 },
-  ],
-  Premium: [
-    { labelTh: "ถนน",              label: "Road",                percent: 45 },
-    { labelTh: "ประปา",            label: "Water Supply",        percent: 15 },
-    { labelTh: "ไฟฟ้า",           label: "Electricity",         percent: 15 },
-    { labelTh: "ระบบระบายน้ำ",    label: "Drainage",            percent: 10 },
-    { labelTh: "รั้ว / ภูมิทัศน์ / สระ", label: "Fence / Landscape / Pool", percent: 15 },
-  ],
-};
-
-export function computeInfraBreakdown(
-  standard: DevelopmentStandard,
-  infraCostPerWah: number,
-  totalLandSizeWah: number
-): InfraBreakdown {
-  const components = INFRA_COMPONENTS[standard];
-  const totalProject = totalLandSizeWah * infraCostPerWah;
-
-  const items = components.map(c => ({
-    labelTh: c.labelTh,
-    label: c.label,
-    percent: c.percent,
-    costPerWah: Math.round(infraCostPerWah * c.percent / 100),
-    totalCost: Math.round(totalProject * c.percent / 100),
-  }));
-
-  return { items, totalPerWah: infraCostPerWah, totalProject };
-}
 
 export function autoEstimate(
   plotCount: number,
-  standard: DevelopmentStandard
+  developmentType: DevelopmentType
 ): AutoEstimation {
   const baseRoad = ROAD_DEDUCTION_BY_PLOTS.find(r => plotCount <= r.maxPlots)?.base ?? 28;
-  const roadDeductionPercent = Math.round(baseRoad * ROAD_MULTIPLIER_BY_STANDARD[standard]);
-  const infrastructureCostPerWah = INFRA_COST_BY_STANDARD[standard];
+  const roadDeductionPercent = Math.round(baseRoad * ROAD_MULTIPLIER[developmentType]);
+  const { ratio: developmentCostRatio, labelTh } = DEVELOPMENT_TYPES[developmentType];
 
   const plotLabel =
     plotCount <= 2  ? "1–2 plots" :
@@ -93,42 +64,61 @@ export function autoEstimate(
     plotCount <= 15 ? "9–15 plots" :
     plotCount <= 25 ? "16–25 plots" : "26+ plots";
 
-  const standardDesc =
-    standard === "Basic"    ? "minimal infrastructure" :
-    standard === "Standard" ? "standard subdivision development" :
-                              "premium gated development";
-
   const rationale =
-    `${plotLabel} ${standard} standard → ${roadDeductionPercent}% road deduction, ` +
-    `${infrastructureCostPerWah.toLocaleString()} THB/wah² infrastructure (${standardDesc})`;
+    `${plotLabel} ${developmentType} (${labelTh}) → ${roadDeductionPercent}% road deduction, ` +
+    `${(developmentCostRatio * 100).toFixed(0)}% of land cost for development`;
 
-  // Breakdown uses 0 total wah at estimation time — totalCost filled in when land size is known
-  const infraBreakdown = computeInfraBreakdown(standard, infrastructureCostPerWah, 0);
+  return { roadDeductionPercent, developmentCostRatio, rationale };
+}
 
-  return { roadDeductionPercent, infrastructureCostPerWah, rationale, infraBreakdown };
+// ─── Validation / Reality Check ───────────────────────────────────────────────
+
+export function generateValidationWarnings(
+  roi: number,
+  grossProfitMargin: number,
+  acquisitionRatio: number,
+  developmentCostRatio: number,
+  roadDeductionPercent: number,
+): string[] {
+  const warnings: string[] = [];
+  if (acquisitionRatio > 6)
+    warnings.push("Selling price assumption is very high relative to acquisition price. Verify with recent comparable sales.");
+  if (roi > 80)
+    warnings.push("Projected ROI exceeds 80% — assumptions may be overly optimistic. Review land cost, selling price, and development cost inputs.");
+  if (developmentCostRatio < 0.08)
+    warnings.push("Development cost ratio is below 8% of land cost. This may underestimate actual infrastructure requirements.");
+  if (grossProfitMargin < 15)
+    warnings.push("Gross margin below 15% leaves limited buffer for cost overruns or market softening.");
+  if (roadDeductionPercent < 5)
+    warnings.push("Road deduction below 5% is unusually low for any subdivision. Confirm with surveyor.");
+  if (acquisitionRatio < 1.5)
+    warnings.push("Selling price is less than 1.5× acquisition price. Acquisition economics appear challenging — re-verify market comparables.");
+  return warnings;
 }
 
 // ─── Core Calculation ─────────────────────────────────────────────────────────
 
-const ACQUISITION_TRANSFER_FEE_RATE = 0.06; // 6% — stamp duty + transfer fee + SBT (simplified)
-const OPERATING_COST_RATE           = 0.10; // 10% — marketing, management, legal
+const ACQUISITION_TRANSFER_FEE_RATE = 0.06; // stamp duty + transfer fee + SBT (simplified)
+const OPERATING_COST_RATE           = 0.10; // marketing, management, legal
 
 export function runQuickCheck(input: QuickCheckInput): QuickCheckResult {
   const totalLandSizeWah       = input.landSizeRai * RAI_TO_WAH + input.landSizeWah;
   const sellableAreaWah        = totalLandSizeWah * (1 - input.roadDeductionPercent / 100);
   const acquisitionCostTotal   = totalLandSizeWah * input.acquisitionPricePerWah;
   const acquisitionTransferFee = Math.round(acquisitionCostTotal * ACQUISITION_TRANSFER_FEE_RATE);
-  const infrastructureCostTotal = totalLandSizeWah * input.infrastructureCostPerWah;
+  const infrastructureCostTotal = Math.round(acquisitionCostTotal * input.developmentCostRatio);
   const operatingCost          = Math.round(
     (acquisitionCostTotal + acquisitionTransferFee + infrastructureCostTotal) * OPERATING_COST_RATE
   );
   const totalProjectCost       = acquisitionCostTotal + acquisitionTransferFee + infrastructureCostTotal + operatingCost;
   const estimatedRevenue       = sellableAreaWah * input.estimatedSellingPricePerWah;
   const grossProfit            = estimatedRevenue - totalProjectCost;
-  const grossProfitMargin      = (grossProfit / estimatedRevenue) * 100;
-  const roi                    = (grossProfit / totalProjectCost) * 100;
+  const grossProfitMargin      = estimatedRevenue > 0 ? (grossProfit / estimatedRevenue) * 100 : 0;
+  const roi                    = totalProjectCost > 0 ? (grossProfit / totalProjectCost) * 100 : 0;
 
-  const acquisitionRatio = input.estimatedSellingPricePerWah / input.acquisitionPricePerWah;
+  const acquisitionRatio = input.acquisitionPricePerWah > 0
+    ? input.estimatedSellingPricePerWah / input.acquisitionPricePerWah
+    : 1;
   const acquisitionScore = Math.min(10, Math.max(0, (acquisitionRatio - 1) * 3.5));
 
   const roadEfficiencyScore = Math.min(10, Math.max(0, (1 - input.roadDeductionPercent / 100) * 12));
@@ -166,6 +156,10 @@ export function runQuickCheck(input: QuickCheckInput): QuickCheckResult {
     landosScore >= 6.0 ? "BUY" :
     landosScore >= 4.5 ? "HOLD" : "PASS";
 
+  const validationWarnings = generateValidationWarnings(
+    roi, grossProfitMargin, acquisitionRatio, input.developmentCostRatio, input.roadDeductionPercent
+  );
+
   return {
     totalLandSizeWah,
     acquisitionCostTotal,
@@ -181,8 +175,9 @@ export function runQuickCheck(input: QuickCheckInput): QuickCheckResult {
     acquisitionScore,
     landosScore,
     recommendation,
+    validationWarnings,
     aiExecutiveSummary: generateExecutiveSummary(roi, grossProfitMargin, acquisitionRatio, input.roadDeductionPercent, landosScore),
-    aiRiskNote: generateRiskNote(grossProfitMargin, input.roadDeductionPercent, roi, input.infrastructureCostPerWah),
+    aiRiskNote: generateRiskNote(grossProfitMargin, input.roadDeductionPercent, roi, input.developmentCostRatio),
   };
 }
 
@@ -192,7 +187,7 @@ export function generateScenarios(
   estimatedSellingPricePerWah: number
 ): SubdivisionScenario[] {
   const basePlots = input.plotCount;
-  const est = autoEstimate(basePlots, input.developmentStandard);
+  const est = autoEstimate(basePlots, input.developmentType);
   const baseRoad = est.roadDeductionPercent;
 
   const configs = [
@@ -213,12 +208,14 @@ export function generateScenarios(
     },
   ];
 
+  const acquisitionCost = totalLandSizeWah * input.acquisitionPricePerWah;
+
   return configs.map(cfg => {
     const sellableAreaWah = totalLandSizeWah * (1 - cfg.road / 100);
     const avgPlotSizeWah = sellableAreaWah / cfg.plotCount;
     const revenueEstimate = sellableAreaWah * estimatedSellingPricePerWah;
-    const cost = totalLandSizeWah * (input.acquisitionPricePerWah + input.infrastructureCostPerWah);
-    const profitMargin = ((revenueEstimate - cost) / revenueEstimate) * 100;
+    const cost = acquisitionCost * (1 + input.developmentCostRatio);
+    const profitMargin = revenueEstimate > 0 ? ((revenueEstimate - cost) / revenueEstimate) * 100 : 0;
     const efficiency = (sellableAreaWah / totalLandSizeWah) * 100;
 
     return {
@@ -250,17 +247,17 @@ export function generateExecutiveSummary(
 }
 
 export function generateRiskNote(
-  margin: number, roadDed: number, roi: number, infraPerWah: number
+  margin: number, roadDed: number, roi: number, developmentCostRatio: number
 ): string {
   const risks: string[] = [];
 
   if (margin < 20) risks.push("thin profit margins leave limited buffer for cost overruns");
   if (roadDed > 25) risks.push("high road deduction significantly reduces sellable land efficiency");
   if (roi < 20)    risks.push("ROI below 20% may not satisfy investor return requirements");
-  if (infraPerWah > 2500) risks.push("infrastructure cost assumptions are aggressive and may increase under detailed engineering review");
+  if (developmentCostRatio > 0.40) risks.push("development cost assumptions are aggressive and may increase under detailed review");
 
   if (risks.length === 0) {
-    return "Project fundamentals appear sound. Monitor infrastructure cost execution and market absorption rate during development phase.";
+    return "Project fundamentals appear sound. Monitor development cost execution and market absorption rate during development phase.";
   }
 
   return `Key risk factors: ${risks.join("; ")}. Recommend sensitivity analysis on these assumptions before final acquisition decision.`;
