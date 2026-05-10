@@ -79,8 +79,23 @@ export function AIChatPanel({ project }: Props) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          style={{ backgroundColor: '#C9A84C', color: '#0D1B2A' }}
-          className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-opacity hover:opacity-90"
+          style={{
+            backgroundColor: '#C9A84C',
+            color: '#0D1B2A',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+            cursor: 'pointer',
+            border: 'none',
+          }}
           aria-label="Open AI Assistant"
         >
           <MessageCircle size={22} />
