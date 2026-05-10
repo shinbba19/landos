@@ -9,7 +9,7 @@ LANDOS is NOT a generic dashboard application.
 
 LANDOS must be positioned and designed as:
 
-“Land Development Intelligence and Investor Reporting System”
+"Land Development Intelligence and Investor Reporting System"
 
 The core experience of LANDOS is:
 - investor-ready reports
@@ -62,7 +62,7 @@ REPORT-FIRST UX
 ==================================================
 
 LANDOS should adopt:
-“Report-First User Experience”
+"Report-First User Experience"
 
 Meaning:
 - users input data
@@ -75,108 +75,183 @@ The reports are the PRIMARY product output.
 PRIMARY SYSTEM OUTPUTS
 ==================================================
 
-1. QUICK CHECK SHEET
-2. INVESTOR SUMMARY
-3. EXECUTIVE FEASIBILITY SHEET
-4. SUBDIVISION ANALYSIS SHEET
-5. SALES KIT / PRESENTATION SHEET
+6 tabs are currently built. 1 is planned.
+
+1. INVESTOR SUMMARY (Summary tab) — BUILT
+   Executive one-page overview: hero metrics, LANDOS score,
+   acquisition intelligence, subdivision overview, AI insights.
+
+2. FEASIBILITY REPORT — BUILT
+   Full financial feasibility with simple and advanced
+   infrastructure cost modes. Live financial summary that
+   updates as the user adjusts assumptions.
+
+3. SUBDIVISION ANALYSIS — BUILT
+   Three-scenario comparison (compact / balanced / spacious),
+   efficiency table, allocation bar, per-scenario financial output.
+
+4. DETAIL SHEET — BUILT
+   Land proportion breakdown, acquisition cost table, per-plot
+   table (equal-plot model), financial summary. Development type
+   dropdown lets user switch cost ratio without leaving the tab.
+
+5. DETAIL SHEET 2 — COST BREAKDOWN — BUILT
+   Same structure as Detail Sheet, but Section 2 is replaced by
+   an editable infrastructure line-item table. User can adjust
+   quantities; unit prices are fixed. All totals auto-calculate.
+
+6. SENSITIVITY ANALYSIS — BUILT
+   5×5 ROI matrix (selling price vs acquisition price),
+   development cost comparison table across all three types,
+   break-even selling price and maximum acquisition price cards.
+
+7. SALES KIT / PRESENTATION SHEET — PLANNED (not yet built)
+   Investor PDF, social presentation, executive briefing sheet.
 
 ==================================================
 WORKFLOW SYSTEM
 ==================================================
 
 --------------------------------------------------
-STEP 1 — QUICK CHECK
+STEP 1 — PROJECT CREATION & QUICK CHECK
 --------------------------------------------------
 
 Purpose:
 Fast land screening and preliminary acquisition analysis.
 
 User inputs:
-- land size
-- acquisition price
+- land size (rai + wah²)
+- acquisition price per wah²
 - zoning
 - road access
-- estimated selling price
+- road deduction %
+- estimated selling price per wah²
+- development type
+- plot count
 
 Outputs:
 - estimated ROI
-- acquisition attractiveness
-- preliminary insight
-- quick recommendation
+- LANDOS score
+- recommendation
+- full project stored in localStorage
 
-==================================================
+--------------------------------------------------
 STEP 2 — INVESTOR SUMMARY
-==================================================
+--------------------------------------------------
 
 Purpose:
 Generate visually readable investment intelligence.
 
-Layout must include:
-- hero land image
-- zoning snapshot
-- road access image
-- key highlights
-- ROI summary
-- acquisition insight
-- market estimate
-- sellable area
-- subdivision count
+Layout includes:
+- branded report header
+- hero stats bar (ROI, gross margin, revenue, total cost)
+- Return Summary + LANDOS Score card
+- Acquisition Intelligence + Subdivision Overview
+- Road Access Observation
+- AI Insights (Executive Summary + Risk Analysis)
+- Revenue Estimate banner
 
 Design priority:
 - readability
 - premium appearance
 - investor communication
 
-==================================================
+--------------------------------------------------
 STEP 3 — EXECUTIVE FEASIBILITY SHEET
-==================================================
+--------------------------------------------------
 
 Purpose:
-Generate detailed development intelligence.
+Generate detailed development intelligence with live adjustments.
 
-Must include:
-- total development cost
-- infrastructure breakdown
+Includes:
+- total development cost breakdown
+- infrastructure cost (simple ratio mode or advanced line-item mode)
 - revenue estimation
 - profit projection
-- cost/wah
-- acquisition logic
-- legal observations
-- project summary
+- gross margin and ROI
+- live financial summary that updates on input change
 
-==================================================
+--------------------------------------------------
 STEP 4 — SUBDIVISION ANALYSIS
-==================================================
+--------------------------------------------------
 
 Purpose:
 Analyze land subdivision strategy.
 
-Must include:
-- subdivision layout image
-- road deduction
-- sellable area
-- average plot size
-- scenario comparison
-- subdivision efficiency
+Includes:
+- three scenario comparison (compact / balanced / spacious)
+- road deduction impact
+- sellable area per scenario
+- average plot size per scenario
+- efficiency metrics
+- per-scenario financial output
 
-Support:
-- uploaded subdivision sketches
-- land office subdivision plans
-- conceptual subdivision layouts
-
-==================================================
-STEP 5 — SALES KIT / PRESENTATION SHEET
-==================================================
+--------------------------------------------------
+STEP 5 — SENSITIVITY ANALYSIS
+--------------------------------------------------
 
 Purpose:
-Generate presentation-ready materials.
+Quantify how financial outcomes shift with market changes.
 
-Outputs:
+Includes:
+- 5×5 ROI matrix: selling price ±20% vs acquisition price ±20%
+- color-coded cells (green ≥30%, gold ≥20%, yellow ≥10%, red <10%)
+- base case highlighted with gold ring
+- development cost comparison table for all three types
+- break-even selling price per wah²
+- maximum supportable acquisition price
+
+--------------------------------------------------
+STEP 6 — SALES KIT (PLANNED)
+--------------------------------------------------
+
+Purpose:
+Generate presentation-ready materials for investors and partners.
+
+Planned outputs:
 - investor PDF
 - social presentation
 - sales presentation
 - executive briefing sheet
+
+==================================================
+DEVELOPMENT COST MODEL
+==================================================
+
+LANDOS uses a ratio-based development cost model.
+
+Infrastructure cost is calculated as:
+  infrastructureCostTotal = acquisitionCostTotal × developmentCostRatio
+
+Three development types:
+- Land Subdivision (การจัดสรรที่ดิน): 10% of land cost
+- Standard Housing (โครงการบ้านมาตรฐาน): 25% of land cost
+- Premium Project (โครงการพรีเมียม): 35% of land cost
+
+The user selects the development type during project creation.
+The type (and thus ratio) can also be changed in Detail Sheet
+and Detail Sheet 2 without returning to the input form.
+
+In Detail Sheet 2, the user can further break the ratio-derived
+total into individual infrastructure line items by editing
+quantities. Unit prices per item are fixed system constants.
+
+==================================================
+VALIDATION ENGINE
+==================================================
+
+LANDOS validates inputs before report generation and flags
+suspicious or inconsistent assumptions.
+
+Reality checks include:
+- selling price below acquisition price (flagged as a loss scenario)
+- road deduction above 40% (unusually high deduction warning)
+- plot count inconsistent with land size (average plot too small)
+- ROI below 0% (project is loss-making at stated assumptions)
+
+Warnings are shown inline before the user proceeds to reports.
+The goal is to prevent garbage-in / garbage-out feasibility sheets
+from being presented to investors.
 
 ==================================================
 REALITY-FIRST SYSTEM
@@ -270,14 +345,14 @@ AI analyzes:
 - subdivision efficiency
 - acquisition attractiveness
 
-Then generate:
+Then generates:
 - executive summary
 - investment insight
 - strategic interpretation
 
 Example output:
 
-“The project demonstrates strong subdivision potential with favorable acquisition economics and balanced infrastructure burden.”
+"The project demonstrates strong subdivision potential with favorable acquisition economics and balanced infrastructure burden."
 
 Display inside:
 - investor summary
@@ -299,7 +374,7 @@ AI recommends the best strategy.
 
 Example output:
 
-“The 7-plot configuration provides the strongest balance between profitability and road allocation efficiency.”
+"The 7-plot configuration provides the strongest balance between profitability and road allocation efficiency."
 
 Display inside:
 - subdivision analysis sheet
@@ -319,12 +394,43 @@ AI explains:
 
 Example output:
 
-“This project may experience reduced margin sensitivity if infrastructure costs exceed preliminary assumptions.”
+"This project may experience reduced margin sensitivity if infrastructure costs exceed preliminary assumptions."
 
 Display inside:
 - executive feasibility sheet
 - acquisition section
 - investor report
+
+==================================================
+AI FEATURE 4 — AI PROJECT ASSISTANT (CHAT)
+==================================================
+
+Purpose:
+Context-aware conversational assistant that knows the
+specific project's numbers and can answer questions,
+run what-if scenarios, and explain results in plain language.
+
+Implementation:
+- Floating action button (bottom-right, gold) on every project page
+- Opens a chat panel (full-screen on mobile, 380×520px floating on desktop)
+- Multi-turn conversation with history (last 8 turns sent to model)
+- System prompt is generated per-project, embedding all financial metrics
+
+Capabilities:
+- Answer direct questions about the project's ROI, margin, costs
+- Explain why a metric is at its current level
+- Calculate "what if" scenarios on request (e.g. "what if selling price drops 10%?")
+- Suggest improvements (e.g. "how can I improve gross margin?")
+- Compute break-even prices on demand
+
+Powered by:
+- Google Gemini 1.5 Flash via @google/generative-ai
+- API route: /api/chat (POST)
+- Suggested starter questions shown on empty state
+
+Boundaries:
+- AI interprets and calculates contextually; it does not write to project state
+- All saved project data remains deterministic and formula-based
 
 ==================================================
 LANDOS SCORE SYSTEM
@@ -397,24 +503,28 @@ TECH STACK
 ==================================================
 
 Frontend:
-- Next.js
+- Next.js (App Router)
 - TypeScript
-- Tailwind CSS
+- Tailwind CSS v4 (CSS-based @theme, no tailwind.config.js)
 - shadcn/ui
 
-Backend:
-- Next.js API routes
-- Prisma ORM
-- PostgreSQL
+Data Persistence:
+- localStorage (client-side only, no backend database)
+- migrateProject() for backward-compatible schema changes
 
 AI:
-- OpenAI API
-
-Charts:
-- Recharts
+- Google Gemini 1.5 Flash (@google/generative-ai)
+- GEMINI_API_KEY environment variable
 
 PDF Export:
-- React PDF / Puppeteer
+- window.print() with print: Tailwind utility classes
+- No third-party PDF library
+
+Charts:
+- Not yet implemented
+
+Deployment:
+- Render.com (render.yaml — Node runtime, npm run build / npm start)
 
 ==================================================
 FINAL PRODUCT POSITIONING
@@ -422,7 +532,7 @@ FINAL PRODUCT POSITIONING
 
 LANDOS is:
 
-“A Land Development Intelligence and Investor Reporting System designed to transform raw land information into acquisition intelligence, subdivision feasibility analysis, and executive-level development reports.”
+"A Land Development Intelligence and Investor Reporting System designed to transform raw land information into acquisition intelligence, subdivision feasibility analysis, and executive-level development reports."
 
 ==================================================
 KEY DIFFERENTIATOR
