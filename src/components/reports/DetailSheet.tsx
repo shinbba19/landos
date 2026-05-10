@@ -191,7 +191,7 @@ export function DetailSheet({ project, liveInfraCost, onInfraCostChange }: Props
             <SectionHeader number="3" title="ต้นทุนการขาย" subtitle="Per-Plot Sales Analysis" />
             <div className="rounded-lg border border-brand-gold/20 bg-brand-navy overflow-hidden mt-4">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[860px]">
+                <table className="w-full text-sm min-w-[960px]">
                   <thead>
                     <tr className="border-b border-brand-gold/15">
                       <th className="text-center px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">แปลง</th>
@@ -200,6 +200,7 @@ export function DetailSheet({ project, liveInfraCost, onInfraCostChange }: Props
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">ค่าที่ดิน</th>
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">ค่าพัฒนา</th>
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">ค่าโอน</th>
+                      <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">ค่าดำเนินการ</th>
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">รวมต้นทุน</th>
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">ราคาขาย</th>
                       <th className="text-right px-3 py-3 text-brand-cream/40 text-xs uppercase tracking-wider font-medium">กำไร</th>
@@ -220,6 +221,7 @@ export function DetailSheet({ project, liveInfraCost, onInfraCostChange }: Props
                         <td className="px-3 py-2.5 text-right text-brand-cream/70 text-xs">{landPerPlot.toLocaleString()}</td>
                         <td className="px-3 py-2.5 text-right text-brand-cream/70 text-xs">{infraPerPlot.toLocaleString()}</td>
                         <td className="px-3 py-2.5 text-right text-brand-cream/70 text-xs">{transferPerPlot.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right text-brand-cream/70 text-xs">{opPerPlot.toLocaleString()}</td>
                         <td className="px-3 py-2.5 text-right text-brand-cream/80 text-xs font-medium">{totalCostPerPlot.toLocaleString()}</td>
                         <td className="px-3 py-2.5 text-right text-brand-gold text-xs font-medium">{sellingPerPlot.toLocaleString()}</td>
                         <td className={cn(
@@ -232,7 +234,7 @@ export function DetailSheet({ project, liveInfraCost, onInfraCostChange }: Props
                     ))}
                     {hiddenPlots > 0 && (
                       <tr className="border-b border-brand-gold/10 bg-brand-navy-mid">
-                        <td colSpan={9} className="px-3 py-2 text-center text-brand-cream/30 text-xs">
+                        <td colSpan={10} className="px-3 py-2 text-center text-brand-cream/30 text-xs">
                           … and {hiddenPlots} more plots (identical size — equal-plot model)
                         </td>
                       </tr>
@@ -245,6 +247,7 @@ export function DetailSheet({ project, liveInfraCost, onInfraCostChange }: Props
                       <td className="px-3 py-3 text-right text-brand-cream/70 text-xs font-semibold">{result.acquisitionCostTotal.toLocaleString()}</td>
                       <td className={cn("px-3 py-3 text-right text-xs font-semibold", isLive ? "text-brand-gold" : "text-brand-cream/70")}>{liveInfraCost.toLocaleString()}</td>
                       <td className="px-3 py-3 text-right text-brand-cream/70 text-xs font-semibold">{result.acquisitionTransferFee.toLocaleString()}</td>
+                      <td className="px-3 py-3 text-right text-brand-cream/70 text-xs font-semibold">{result.operatingCost.toLocaleString()}</td>
                       <td className={cn("px-3 py-3 text-right font-bold text-xs", isLive ? "text-brand-gold" : "text-brand-cream")}>{liveTotalCost.toLocaleString()}</td>
                       <td className="px-3 py-3 text-right text-brand-gold font-bold text-xs">{result.estimatedRevenue.toLocaleString()}</td>
                       <td className={cn(
