@@ -58,8 +58,9 @@ export function AIChatPanel({ project }: Props) {
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Request failed");
       setHistory(prev => [...prev, { role: "assistant", content: data.response }]);
-    } catch {
-      setError("Failed to get a response. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to get a response: ${msg}`);
       setHistory(prev => prev.slice(0, -1));
     } finally {
       setLoading(false);
@@ -197,10 +198,10 @@ export function AIChatPanel({ project }: Props) {
                   </div>
                 </div>
               )}
-              {error && (
-                <p className="text-red-400 text-xs pl-9">{error}</p>
-              )}
             </>
+          )}
+          {error && (
+            <p className="text-red-400 text-xs px-1 py-2">{error}</p>
           )}
           <div ref={bottomRef} />
         </div>
