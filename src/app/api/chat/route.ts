@@ -85,6 +85,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("Chat route error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const isQuota = msg.includes("429") || msg.includes("quota") || msg.includes("Too Many Requests");
+    const friendly = isQuota
+      ? "AI quota exceeded. Please try again in a moment, or check your Gemini API key."
+      : "AI is unavailable right now. Please try again.";
+    return NextResponse.json({ error: friendly }, { status: 500 });
   }
 }
