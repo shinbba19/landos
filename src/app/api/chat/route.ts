@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const { message, history, input, result } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const systemPrompt = buildSystemPrompt(input, result);
     const prompt = buildConversationPrompt(systemPrompt, history, message);
