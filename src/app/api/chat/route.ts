@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type { QuickCheckInput, QuickCheckResult } from "@/lib/types";
 
 interface ChatMessage {
@@ -72,15 +72,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as ChatRequestBody;
     const { message, history, input, result } = body;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
     const systemPrompt = buildSystemPrompt(input, result);
     const prompt = buildConversationPrompt(systemPrompt, history, message);
 
-    const response = await model.generateContent(prompt);
-    const text = response.response.text().trim();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+    });
 
+    const text = response.text?.trim() ?? "";
     return NextResponse.json({ response: text });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

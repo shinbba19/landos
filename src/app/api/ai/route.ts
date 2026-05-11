@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { generateExecutiveSummary, generateRiskNote } from "@/lib/calculations";
 import type { QuickCheckInput, QuickCheckResult } from "@/lib/types";
 
@@ -56,11 +56,14 @@ export async function POST(request: NextRequest) {
     input = body.input;
     result = body.result;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-    const response = await model.generateContent(buildPrompt(input, result));
-    const text = response.response.text();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: buildPrompt(input, result),
+    });
+
+    const text = response.text ?? "";
     const parsed = parseAIResponse(text);
 
     if (!parsed.executiveSummary || !parsed.riskNote) {
